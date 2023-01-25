@@ -35,7 +35,7 @@ class Augmenter(object):
         self.aug_weight = aug_weight
 
     def __repr__(self):
-        return "<{}>".format(self.__name__)
+        return f"<{self.__name__}>"
 
     @property
     def apply_prob(self):
@@ -141,11 +141,9 @@ class RegionalAugmenter(Augmenter):
         self.min_fraction = float(min_fraction)
         self.max_fraction = float(max_fraction)
         if self.min_fraction <= 0:
-            raise ValueError("Minimum fraction must be > 0, got "
-                             "{}".format(self.min_fraction))
+            raise ValueError(f"Minimum fraction must be > 0, got {self.min_fraction}")
         if self.max_fraction > 1:
-            raise ValueError("Maximum fraction must be <= 1, "
-                             "got {}".format(self.max_fraction))
+            raise ValueError(f"Maximum fraction must be <= 1, got {self.max_fraction}")
 
     @staticmethod
     def reshape_x(x):
@@ -166,18 +164,16 @@ class RegionalAugmenter(Augmenter):
             min_f = np.log10(self.min_fraction)
             max_f = np.log10(self.max_fraction)
             frac = np.power(10, np.random.uniform(min_f, max_f, 1)[0])
-            length = int(frac * x_length)
+            return int(frac * x_length)
         else:
             min_ = int(self.min_fraction * x_length)
             max_ = int(self.max_fraction * x_length)
-            length = int(np.random.uniform(min_, max_, 1)[0])
-        return length
+            return int(np.random.uniform(min_, max_, 1)[0])
 
     @staticmethod
     def get_start_point(x_length):
         """ Sample a random start position within a x_length long signal """
-        start = np.random.randint(0, x_length, 1)[0]
-        return start
+        return np.random.randint(0, x_length, 1)[0]
 
     @staticmethod
     def _augment_with_transform(x, y, start, transform_func, x_length, aug_length):
@@ -187,7 +183,7 @@ class RegionalAugmenter(Augmenter):
         wrap = start+aug_length-x_length
         if wrap > 0:
             r1 = x[start:start + aug_length - wrap]
-            r2 = x[0:wrap]
+            r2 = x[:wrap]
             r1[:] = transform_func(r1)
             r2[:] = transform_func(r2)
         else:
@@ -204,7 +200,7 @@ class RegionalAugmenter(Augmenter):
         wrap = start+aug_length-x_length
         if wrap > 0:
             x[start:start + aug_length - wrap] = insert[:-wrap].copy()
-            x[0:wrap] = insert[-wrap:].copy()
+            x[:wrap] = insert[-wrap:].copy()
         else:
             x[start:start+aug_length] = insert.copy()
         return x, y
@@ -272,13 +268,13 @@ class GlobalElasticDeformations(Augmenter):
                 raise ValueError("Invalid list of alphas specified '%s'. "
                                  "Should be 2 numbers." % alpha)
             if alpha[1] <= alpha[0]:
-                raise ValueError("alpha upper is smaller than sigma lower (%s)" % alpha)
+                raise ValueError(f"alpha upper is smaller than sigma lower ({alpha})")
         if isinstance(sigma, (list, tuple)):
             if len(sigma) != 2:
                 raise ValueError("Invalid list of sigmas specified '%s'. "
                                  "Should be 2 numbers." % sigma)
             if sigma[1] <= sigma[0]:
-                raise ValueError("Sigma upper is smaller than sigma lower (%s)" % sigma)
+                raise ValueError(f"Sigma upper is smaller than sigma lower ({sigma})")
 
         self._alpha = alpha
         self._sigma = sigma
@@ -388,10 +384,9 @@ class ChannelDropout(Augmenter):
         n_channels = x.shape[-1]
         n_to_drop = max(int(n_channels * self.drop_fraction), 1)
         if n_to_drop >= n_channels:
-            raise ValueError("Attempted to drop {} channels from 'x' with {}"
-                             " channels (shape {})".format(n_to_drop,
-                                                           n_channels,
-                                                           x.shape))
+            raise ValueError(
+                f"Attempted to drop {n_to_drop} channels from 'x' with {n_channels} channels (shape {x.shape})"
+            )
         to_drop = np.random.choice(np.arange(n_channels), n_to_drop, False)
         for i in to_drop:
             x[..., i] = np.random.normal(loc=np.mean(x[..., i]),

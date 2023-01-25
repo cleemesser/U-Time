@@ -43,7 +43,7 @@ def get_argparser():
 def to_ids(start, durs, stage, out):
     with open(out, "w") as out_f:
         for i, d, s in zip(start, durs, stage):
-            out_f.write("{},{},{}\n".format(int(i), int(d), s))
+            out_f.write(f"{int(i)},{int(d)},{s}\n")
 
 
 def remove_offset(inits):
@@ -70,16 +70,13 @@ def run(args):
     if n_files == 0:
         return
     logger.info(f"Saving .ids files to '{out_dir}'")
-    if n_files == 0:
-        return
-
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     for i, file_ in enumerate(files):
         file_name = os.path.split(file_)[-1].split(".", 1)[0]
         folder_name = os.path.split(os.path.split(file_)[0])[-1]
         out_dir_subject = os.path.join(out_dir, folder_name)
-        out = os.path.join(out_dir_subject, file_name + ".ids")
+        out = os.path.join(out_dir_subject, f"{file_name}.ids")
         logger.info(f"{i+1}/{n_files} Processing {file_name}\n"
                     f"-- In path    {file_}\n"
                     f"-- Out path   {out}")

@@ -184,12 +184,13 @@ class BaseSequence(_BaseSequence):
                 pass
             else:
                 self._cum_periods_per_pair = np.cumsum(self.periods_per_pair)
-        if batch_scaler not in (None, False):
-            if not assert_scaler(batch_scaler):
-                raise ValueError("Invalid batch scaler {}".format(batch_scaler))
-            self.batch_scaler = batch_scaler
-        else:
+        if batch_scaler in (None, False):
             self.batch_scaler = None
+
+        elif not assert_scaler(batch_scaler):
+            raise ValueError(f"Invalid batch scaler {batch_scaler}")
+        else:
+            self.batch_scaler = batch_scaler
 
     def get_pairs(self):
         return self.dataset_queue.get_pairs()
@@ -274,12 +275,13 @@ class BaseSequence(_BaseSequence):
             value: (bool) Set augmentation enabled or not
         """
         if not isinstance(value, bool):
-            raise TypeError("Argument to 'augmentation_enabled' must be a "
-                            "boolean value. Got {} ({})".format(value,
-                                                                type(value)))
+            raise TypeError(
+                f"Argument to 'augmentation_enabled' must be a boolean value. Got {value} ({type(value)})"
+            )
         if value is True and not self.augmenters:
-            raise ValueError("Cannot set 'augmentation_enabled' 'True' with "
-                             "empty 'augmenters' list: {}".format(self.augmenters))
+            raise ValueError(
+                f"Cannot set 'augmentation_enabled' 'True' with empty 'augmenters' list: {self.augmenters}"
+            )
         self._do_augmentation = value
 
     @property
@@ -318,16 +320,14 @@ class BaseSequence(_BaseSequence):
 
         """
         from utime.augmentation import augmenters
-        if list_of_augs is None:
-            init_aug = []
-        else:
+        init_aug = []
+        if list_of_augs is not None:
             c1 = not isinstance(list_of_augs, (tuple, list, np.ndarray))
-            c2 = not all([isinstance(o, dict) for o in list_of_augs])
+            c2 = not all(isinstance(o, dict) for o in list_of_augs)
             if c1 or c2:
-                raise TypeError("Property 'augmenters' must be a list or tuple "
-                                "of dictionary elements, "
-                                "got {}".format(list_of_augs))
-            init_aug = []
+                raise TypeError(
+                    f"Property 'augmenters' must be a list or tuple of dictionary elements, got {list_of_augs}"
+                )
             for d in list_of_augs:
                 cls = augmenters.__dict__[d["cls_name"]]
                 init_aug.append(cls(**d["kwargs"]))
@@ -418,10 +418,9 @@ class BaseSequence(_BaseSequence):
             else:
                 X, y = np.expand_dims(X, 0), np.expand_dims(y, 0)
         elif X.ndim != expected_dim:
-            raise RuntimeError("Dimensionality of X is {} (shape {}), but "
-                               "expected {}".format(X.ndim,
-                                                    X.shape,
-                                                    expected_dim))
+            raise RuntimeError(
+                f"Dimensionality of X is {X.ndim} (shape {X.shape}), but expected {expected_dim}"
+            )
 
         if self.batch_scaler:
             # Scale the batch

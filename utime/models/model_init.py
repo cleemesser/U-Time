@@ -110,8 +110,7 @@ def init_and_load_latest_model(hparams, model_dir, clear_previous=False, by_name
     model = init_model(hparams["build"], clear_previous=clear_previous)
     model_path, epoch = get_last_model(model_dir)
     if model_path is None:
-        raise OSError("Did not find any model files in "
-                      "directory {}".format(model_dir))
+        raise OSError(f"Did not find any model files in directory {model_dir}")
     load_from_file(model, model_path, by_name=by_name)
     model_file_name = os.path.split(model_path)[-1]
     return model, model_file_name, epoch
@@ -145,10 +144,7 @@ def prepare_for_continued_training(hparams, project_dir):
         Will be None if no model files were found
     """
     model_path, epoch = get_last_model(os.path.join(project_dir, "model"))
-    if model_path:
-        model_name = os.path.split(model_path)[-1]
-    else:
-        model_name = None
+    model_name = os.path.split(model_path)[-1] if model_path else None
     csv_path = os.path.join(project_dir, "logs", "training.csv")
     if epoch == 0:
         epoch = get_last_epoch(csv_path)

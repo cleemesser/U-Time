@@ -44,8 +44,15 @@ class InputReshape(Layer):
 
     def call(self, inputs, **kwargs):
         shape = shape_safe(inputs)
-        inputs_reshaped = tf.reshape(inputs, shape=[shape[0], self.seq_length or shape[1]*shape[2], 1, self.n_channels])
-        return inputs_reshaped
+        return tf.reshape(
+            inputs,
+            shape=[
+                shape[0],
+                self.seq_length or shape[1] * shape[2],
+                1,
+                self.n_channels,
+            ],
+        )
 
 
 class OutputReshape(Layer):
@@ -184,9 +191,9 @@ class USleep(Model):
         if not isinstance(self.data_per_prediction, (int, np.integer)):
             raise TypeError("data_per_prediction must be an integer value")
         if self.input_dims % self.data_per_prediction:
-            raise ValueError("'input_dims' ({}) must be evenly divisible by "
-                             "'data_per_prediction' ({})".format(self.input_dims,
-                                                                 self.data_per_prediction))
+            raise ValueError(
+                f"'input_dims' ({self.input_dims}) must be evenly divisible by 'data_per_prediction' ({self.data_per_prediction})"
+            )
 
         # Build model and init base keras Model class
         super().__init__(*self.init_model(name_prefix=name))
@@ -212,33 +219,43 @@ class USleep(Model):
                        name="encoder",
                        name_prefix="",
                        **other_conv_params):
-        name = "{}{}".format(name_prefix, name)
+        name = f"{name_prefix}{name}"
         residual_connections = []
         for i in range(depth):
             l_name = name + "_L%i" % i
-            conv = Conv2D(int(filters*complexity_factor), (kernel_size, 1),
-                          activation=activation, padding=padding,
-                          kernel_regularizer=regularizer,
-                          bias_regularizer=regularizer,
-                          dilation_rate=dilation,
-                          name=l_name + "_conv1", **other_conv_params)(in_)
-            bn = BatchNormalization(name=l_name + "_BN1")(conv)
-            bn = PadStartToEvenLength(name=l_name + "_padding")(bn)
-            in_ = MaxPooling2D(pool_size=(2, 1), name=l_name + "_pool")(bn)
+            conv = Conv2D(
+                int(filters * complexity_factor),
+                (kernel_size, 1),
+                activation=activation,
+                padding=padding,
+                kernel_regularizer=regularizer,
+                bias_regularizer=regularizer,
+                dilation_rate=dilation,
+                name=f"{l_name}_conv1",
+                **other_conv_params,
+            )(in_)
+            bn = BatchNormalization(name=f"{l_name}_BN1")(conv)
+            bn = PadStartToEvenLength(name=f"{l_name}_padding")(bn)
+            in_ = MaxPooling2D(pool_size=(2, 1), name=f"{l_name}_pool")(bn)
 
             # add bn layer to list for residual conn.
             residual_connections.append(bn)
             filters = int(filters * np.sqrt(2))
 
         # Bottom
-        name = "{}bottom".format(name_prefix)
-        conv = Conv2D(int(filters*complexity_factor), (kernel_size, 1),
-                      activation=activation, padding=padding,
-                      kernel_regularizer=regularizer,
-                      bias_regularizer=regularizer,
-                      dilation_rate=1,
-                      name=name + "_conv1", **other_conv_params)(in_)
-        encoded = BatchNormalization(name=name + "_BN1")(conv)
+        name = f"{name_prefix}bottom"
+        conv = Conv2D(
+            int(filters * complexity_factor),
+            (kernel_size, 1),
+            activation=activation,
+            padding=padding,
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            dilation_rate=1,
+            name=f"{name}_conv1",
+            **other_conv_params,
+        )(in_)
+        encoded = BatchNormalization(name=f"{name}_BN1")(conv)
         return encoded, residual_connections, filters
 
     def create_upsample(self,
@@ -255,32 +272,41 @@ class USleep(Model):
                         name="upsample",
                         name_prefix="",
                         **other_conv_params):
-        name = "{}{}".format(name_prefix, name)
+        name = f"{name_prefix}{name}"
         residual_connections = res_conns[::-1]
         for i in range(depth):
             filters = int(np.ceil(filters/np.sqrt(2)))
             l_name = name + "_L%i" % i
 
             # Up-sampling block
-            up = UpSampling2D(size=(2, 1), name=l_name + "_up")(in_)
-            conv = Conv2D(int(filters*complexity_factor), (2, 1),
-                          activation=activation,
-                          padding=padding,
-                          kernel_regularizer=regularizer,
-                          bias_regularizer=regularizer,
-                          name=l_name + "_conv1", **other_conv_params)(up)
-            bn = BatchNormalization(name=l_name + "_BN1")(conv)
+            up = UpSampling2D(size=(2, 1), name=f"{l_name}_up")(in_)
+            conv = Conv2D(
+                int(filters * complexity_factor),
+                (2, 1),
+                activation=activation,
+                padding=padding,
+                kernel_regularizer=regularizer,
+                bias_regularizer=regularizer,
+                name=f"{l_name}_conv1",
+                **other_conv_params,
+            )(up)
+            bn = BatchNormalization(name=f"{l_name}_BN1")(conv)
 
             # Crop and concatenate
             res_con = residual_connections[i]
-            cropped_bn = CropToMatch(name=l_name + "_crop")([bn, res_con])
-            merge = Concatenate(axis=-1, name=l_name + "_concat")([res_con, cropped_bn])
-            conv = Conv2D(int(filters*complexity_factor), (kernel_size, 1),
-                          activation=activation, padding=padding,
-                          kernel_regularizer=regularizer,
-                          bias_regularizer=regularizer,
-                          name=l_name + "_conv2", **other_conv_params)(merge)
-            in_ = BatchNormalization(name=l_name + "_BN2")(conv)
+            cropped_bn = CropToMatch(name=f"{l_name}_crop")([bn, res_con])
+            merge = Concatenate(axis=-1, name=f"{l_name}_concat")([res_con, cropped_bn])
+            conv = Conv2D(
+                int(filters * complexity_factor),
+                (kernel_size, 1),
+                activation=activation,
+                padding=padding,
+                kernel_regularizer=regularizer,
+                bias_regularizer=regularizer,
+                name=f"{l_name}_conv2",
+                **other_conv_params,
+            )(merge)
+            in_ = BatchNormalization(name=f"{l_name}_BN2")(conv)
         return in_
 
     def create_dense_modeling(self,
@@ -291,14 +317,15 @@ class USleep(Model):
                               complexity_factor,
                               name_prefix="",
                               **other_conv_params):
-        cls = Conv2D(filters=int(filters*complexity_factor),
-                     kernel_size=(1, 1),
-                     kernel_regularizer=regularizer,
-                     bias_regularizer=regularizer,
-                     activation=dense_classifier_activation,
-                     name="{}dense_classifier_out".format(name_prefix),
-                     **other_conv_params)(in_)
-        return cls
+        return Conv2D(
+            filters=int(filters * complexity_factor),
+            kernel_size=(1, 1),
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            activation=dense_classifier_activation,
+            name=f"{name_prefix}dense_classifier_out",
+            **other_conv_params,
+        )(in_)
 
     @staticmethod
     def create_seq_modeling(in_,
@@ -311,25 +338,32 @@ class USleep(Model):
                             regularizer=None,
                             name_prefix="",
                             **other_conv_params):
-        cls = AveragePooling2D((data_per_period, 1),
-                               name="{}average_pool".format(name_prefix))(in_)
-        out = Conv2D(filters=n_classes,
-                     kernel_size=(transition_window, 1),
-                     activation=activation,
-                     kernel_regularizer=regularizer,
-                     bias_regularizer=regularizer,
-                     padding="same",
-                     name="{}sequence_conv_out_1".format(name_prefix),
-                     **other_conv_params)(cls)
-        out = Conv2D(filters=n_classes,
-                     kernel_size=(transition_window, 1),
-                     activation="softmax",
-                     kernel_regularizer=regularizer,
-                     bias_regularizer=regularizer,
-                     padding="same",
-                     name="{}sequence_conv_out_2".format(name_prefix),
-                     **other_conv_params)(out)
-        out = OutputReshape(n_periods=n_periods, name="{}output_reshape".format(name_prefix))(out)
+        cls = AveragePooling2D(
+            (data_per_period, 1), name=f"{name_prefix}average_pool"
+        )(in_)
+        out = Conv2D(
+            filters=n_classes,
+            kernel_size=(transition_window, 1),
+            activation=activation,
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            padding="same",
+            name=f"{name_prefix}sequence_conv_out_1",
+            **other_conv_params,
+        )(cls)
+        out = Conv2D(
+            filters=n_classes,
+            kernel_size=(transition_window, 1),
+            activation="softmax",
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            padding="same",
+            name=f"{name_prefix}sequence_conv_out_2",
+            **other_conv_params,
+        )(out)
+        out = OutputReshape(
+            n_periods=n_periods, name=f"{name_prefix}output_reshape"
+        )(out)
         return out
 
     def init_model(self, inputs=None, name_prefix=""):

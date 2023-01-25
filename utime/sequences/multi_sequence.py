@@ -191,9 +191,7 @@ class ValidationMultiSequence:
         Returns the minimum number of total periods in any of the stored
         validation sequences.
         """
-        vspe = []
-        for vs in self.sequences:
-            vspe.append(vs.total_periods)
+        vspe = [vs.total_periods for vs in self.sequences]
         return np.min(vspe)
 
     @property

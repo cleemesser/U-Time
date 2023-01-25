@@ -93,8 +93,7 @@ def sequence_predict_generator(model, total_seq_length, generator,
     cur_pos = 0
     for X, _, _ in generator:
         if verbose:
-            print("  pos: {}/{}".format(cur_pos+1, total_seq_length),
-                  end="\r", flush=True)
+            print(f"  pos: {cur_pos + 1}/{total_seq_length}", end="\r", flush=True)
         batch_pred = model.predict_on_batch(X)
         if overlapping:
             for p in batch_pred:

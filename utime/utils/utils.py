@@ -14,7 +14,8 @@ def create_folders(folders, create_deep=False):
         except FileExistsError:
             # If running many jobs in parallel this may occur
             pass
-    make_func = os.mkdir if not create_deep else os.makedirs
+
+    make_func = os.makedirs if create_deep else os.mkdir
     if isinstance(folders, str):
         if not os.path.exists(folders):
             safe_make(folders, make_func)
@@ -36,7 +37,11 @@ def flatten_lists_recursively(list_of_lists):
 
 
 def highlighted(string):
-    length = len(string) if "\n" not in string else max([len(s) for s in string.split("\n")])
+    length = (
+        len(string)
+        if "\n" not in string
+        else max(len(s) for s in string.split("\n"))
+    )
     border = "-" * length
     return "%s\n%s\n%s" % (border, string, border)
 
@@ -74,7 +79,7 @@ def _wait_for(pid, check_every=120):
         except subprocess.CalledProcessError:
             output = False
         ps.wait()
-        still_running = bool(output)
+        still_running = output
         if still_running:
             logging.info(f"Process {pid} still running... (sleeping {check_every} seconds)")
             time.sleep(check_every)

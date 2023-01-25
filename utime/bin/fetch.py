@@ -63,7 +63,7 @@ def validate_and_create_out_dir(out_dir):
     Creates directory/directories if not existing
     """
     if not os.path.exists(out_dir):
-        logger.info("Creating output directory {}".format(out_dir))
+        logger.info(f"Creating output directory {out_dir}")
         os.makedirs(out_dir)
 
 

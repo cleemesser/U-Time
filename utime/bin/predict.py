@@ -181,9 +181,7 @@ def get_datasets(hparams, args):
         if args.notch_filter_settings:
             # Replace set set notch filter settings
             set_new_notch_filter_settings(dataset_hparams, args.notch_filter_settings)
-        # Check if channel sampling groups are set
-        channel_groups = dataset_hparams.get('channel_sampling_groups')
-        if channel_groups:
+        if channel_groups := dataset_hparams.get('channel_sampling_groups'):
             # Add the channel groups to a separate field, handled at pred. time
             # Make sure all available channels are available in the misc attr.
             del dataset_hparams['channel_sampling_groups']
@@ -198,16 +196,16 @@ def get_datasets(hparams, args):
         datasets = [(get_dataset_from_regex_pattern(args.folder_regex,
                                                     hparams=dataset_hparams),)]
     else:
-        # predict on datasets described in the hyperparameter files
-        datasets = []
-        for dataset_id, dataset_hparams in all_dataset_hparams.items():
-            if not args.datasets or dataset_id in args.datasets:
-                datasets.append(get_dataset_splits_from_hparams(
-                    hparams=dataset_hparams,
-                    splits_to_load=(args.data_split,),
-                    id=dataset_id
-                ))
-        if len(datasets) == 0:
+        datasets = [
+            get_dataset_splits_from_hparams(
+                hparams=dataset_hparams,
+                splits_to_load=(args.data_split,),
+                id=dataset_id,
+            )
+            for dataset_id, dataset_hparams in all_dataset_hparams.items()
+            if not args.datasets or dataset_id in args.datasets
+        ]
+        if not datasets:
             raise RuntimeError(f"Cannot run prediction on 0 datasets. "
                                f"No datasets left with --datasets {args.datasets} and datasets in "
                                f"hparams: {list(all_dataset_hparams.keys())}")
@@ -238,8 +236,7 @@ def get_save_path(out_dir, file_name, sub_folder_name=None):
         out_dir_pred = os.path.join(out_dir, sub_folder_name)
     else:
         out_dir_pred = out_dir
-    out_path = os.path.join(out_dir_pred, file_name)
-    return out_path
+    return os.path.join(out_dir_pred, file_name)
 
 
 def save_file(path, arr, argmax):
@@ -276,11 +273,17 @@ def run_pred_on_channels(sleep_study_pair, seq, model, model_func, num_test_time
 
 def run_pred_on_pair(sleep_study_pair, seq, model, model_func, out_dir, channel_sets, args):
     majority_voted = None
-    path_mj = get_save_path(out_dir, sleep_study_pair.identifier + "_PRED.npy", "majority")
-    path_true = get_save_path(out_dir, sleep_study_pair.identifier + "_TRUE.npy", None)
+    path_mj = get_save_path(
+        out_dir, f"{sleep_study_pair.identifier}_PRED.npy", "majority"
+    )
+    path_true = get_save_path(
+        out_dir, f"{sleep_study_pair.identifier}_TRUE.npy", None
+    )
     for k, (sub_folder_name, channels_to_load) in enumerate(channel_sets):
         # Get prediction out path
-        path_pred = get_save_path(out_dir, sleep_study_pair.identifier + "_PRED.npy", sub_folder_name)
+        path_pred = get_save_path(
+            out_dir, f"{sleep_study_pair.identifier}_PRED.npy", sub_folder_name
+        )
 
         # If not --overwrite set, and path exists, we skip it here
         if os.path.exists(path_pred) and not args.overwrite:
@@ -367,14 +370,13 @@ def run_pred(dataset,
             except (CouldNotLoadError, RuntimeError) as e:
                 logger.error(f"Error on study {sleep_study_pair}: {str(e)}. "
                              f"Traceback: {traceback.format_exc()}")
-                if args.move_study_to_folder_on_error:
-                    if not os.path.exists(args.move_study_to_folder_on_error):
-                        os.makedirs(args.move_study_to_folder_on_error)
-                    logger.info(f"Moving study folder {sleep_study_pair.subject_dir} -> "
-                                f"{args.move_study_to_folder_on_error}")
-                    shutil.move(sleep_study_pair.subject_dir, args.move_study_to_folder_on_error)
-                else:
+                if not args.move_study_to_folder_on_error:
                     raise e
+                if not os.path.exists(args.move_study_to_folder_on_error):
+                    os.makedirs(args.move_study_to_folder_on_error)
+                logger.info(f"Moving study folder {sleep_study_pair.subject_dir} -> "
+                            f"{args.move_study_to_folder_on_error}")
+                shutil.move(sleep_study_pair.subject_dir, args.move_study_to_folder_on_error)
 
 
 def run(args):
@@ -389,10 +391,11 @@ def run(args):
     assert_project_folder(project_dir, evaluation=True)
 
     # Prepare output dir
-    if not args.folder_regex:
-        out_dir = get_out_dir(args.out_dir, args.data_split)
-    else:
-        out_dir = args.out_dir
+    out_dir = (
+        args.out_dir
+        if args.folder_regex
+        else get_out_dir(args.out_dir, args.data_split)
+    )
     prepare_output_dir(out_dir, True)
 
     # Get hyperparameters and init all described datasets
@@ -440,7 +443,9 @@ def entry_func(args=None):
     # Parse command line arguments
     parser = get_argparser()
     args = parser.parse_args(args)
-    add_logging_file_handler(args.log_file, args.overwrite, mode="w" if not args.continue_ else "a")
+    add_logging_file_handler(
+        args.log_file, args.overwrite, mode="a" if args.continue_ else "w"
+    )
     run(args)
 
 

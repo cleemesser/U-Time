@@ -163,7 +163,7 @@ def extract(files, out_dir, channels, renamed_channels, trim_leading_seconds_dic
         out_dir_subject = os.path.join(out_dir, name)
         if not os.path.exists(out_dir_subject):
             os.mkdir(out_dir_subject)
-        out_path = os.path.join(out_dir_subject, name + ".h5")
+        out_path = os.path.join(out_dir_subject, f"{name}.h5")
         if os.path.exists(out_path):
             if args.continue_:
                 logger.info("-- Skipping (already exists, overwrite=False)")
@@ -216,10 +216,9 @@ def run(args):
     channels = ChannelMontageTuple(args.channels, relax=True)
     renamed_channels = args.rename_channels
     if renamed_channels and (len(renamed_channels) != len(channels)):
-        raise ValueError("--rename_channels argument must have the same number"
-                         " of elements as --channels. Got {} and {}.".format(
-            len(channels), len(renamed_channels)
-        ))
+        raise ValueError(
+            f"--rename_channels argument must have the same number of elements as --channels. Got {len(channels)} and {len(renamed_channels)}."
+        )
 
     trim_leading_seconds_dict = None
     if args.trim_leading_seconds_dict:
@@ -245,7 +244,9 @@ def entry_func(args=None):
     # Get the script to execute, parse only first input
     parser = get_argparser()
     args = parser.parse_args(args)
-    add_logging_file_handler(args.log_file, args.overwrite, mode="w" if not args.continue_ else "a")
+    add_logging_file_handler(
+        args.log_file, args.overwrite, mode="a" if args.continue_ else "w"
+    )
     run(args)
 
 

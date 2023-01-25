@@ -125,10 +125,10 @@ def get_processed_args(args):
         if not manual_grouping_is_used and not args.auto_channel_grouping:
             channel_types = usleep.get_model_description(model_name, model_version)['channel_types']
             args.auto_channel_grouping = channel_types
+    elif args.channels is None and args.auto_channel_grouping is None:
+        raise RuntimeError("Must specify the --channels or --auto_channel_grouping flag arguments "
+                           "when not using the --model flag.")
     else:
-        if args.channels is None and args.auto_channel_grouping is None:
-            raise RuntimeError("Must specify the --channels or --auto_channel_grouping flag arguments "
-                               "when not using the --model flag.")
         project_dir = os.path.abspath(Defaults.PROJECT_DIRECTORY)
 
     if manual_grouping_is_used and args.auto_channel_grouping:
@@ -152,10 +152,12 @@ def get_processed_args(args):
 
     # Set output file path
     if os.path.isdir(args.o):
-        args.o = os.path.join(args.o, os.path.splitext(os.path.split(args.f)[-1])[0] + ".npy")
+        args.o = os.path.join(
+            args.o, f"{os.path.splitext(os.path.split(args.f)[-1])[0]}.npy"
+        )
 
     # Set logging out path
-    default_log_file_path = os.path.splitext(args.o)[0] + ".log"
+    default_log_file_path = f"{os.path.splitext(args.o)[0]}.log"
     if args.logging_out_path is None:
         args.logging_out_path = default_log_file_path
     elif os.path.isdir(args.logging_out_path):
@@ -187,10 +189,7 @@ def predict_study(study, model, channel_groups, no_argmax):
     if hasattr(pred, "numpy") and callable(pred.numpy):
         pred = pred.numpy()
     pred = pred.reshape(-1, pred.shape[-1])
-    if no_argmax:
-        return pred
-    else:
-        return np.expand_dims(pred.argmax(-1), -1)
+    return pred if no_argmax else np.expand_dims(pred.argmax(-1), -1)
 
 
 def save_hyp(path, pred, **kwargs):
@@ -208,8 +207,7 @@ def _to_ids(pred, period_length_sec):
     Map prediction integer values to string stages and convert dense stages to sparse IDS formatted tuples
     """
     stage_strings = np.vectorize(Defaults.get_class_int_to_stage_string().get)(pred.ravel())
-    ids = dense_to_sparse(stage_strings, period_length_sec, allow_trim=True)
-    return ids
+    return dense_to_sparse(stage_strings, period_length_sec, allow_trim=True)
 
 
 def save_ids(path, pred, period_length_sec, **kwargs):
@@ -261,7 +259,7 @@ def save_prediction(pred, out_path, period_length_sec, no_argmax):
         save_func = save_tsv
     else:
         # Save as npy
-        out_path = os.path.join(dir_, basename + ".npy")
+        out_path = os.path.join(dir_, f"{basename}.npy")
         save_func = save_npy
     # Save pred to disk
     logger.info(f"Saving prediction array of shape {pred.shape} to {out_path}")
@@ -312,8 +310,9 @@ def unpack_channel_groups(channels):
         channels_to_load = channels
         channel_groups = [channels]
     else:
-        raise ValueError("Must specify either a list of channels "
-                         "or a list of channel groups, got a mix: {}".format(channels))
+        raise ValueError(
+            f"Must specify either a list of channels or a list of channel groups, got a mix: {channels}"
+        )
 
     return channels_to_load, channel_groups
 
@@ -346,10 +345,12 @@ def strip_and_infer_channel_types(channels_to_load, channel_groups):
 def get_channel_groups(channels, channel_types, channel_group_spec):
     def upper_stripped(s):
         return s.strip().upper()
+
     channel_types = list(map(upper_stripped, channel_types))
     channel_group_spec = list(map(upper_stripped, channel_group_spec))
-    if any([c not in channel_group_spec for c in channel_types]) or \
-            any([c not in channel_types for c in channel_group_spec]):
+    if any(c not in channel_group_spec for c in channel_types) or any(
+        c not in channel_types for c in channel_group_spec
+    ):
         raise ValueError(f"Cannot get channel groups for spec {channel_group_spec} with channels "
                          f"{channels} and types {channel_types}: One or more types are not in the requested "
                          f"channel group spec or vice versa.")
@@ -485,8 +486,7 @@ def run(args, return_prediction=False):
     # Get hyperparameters and init all described datasets
     from utime.hyperparameters import YAMLHParams
     hparams = YAMLHParams(Defaults.get_hparams_path(args.project_dir), no_version_control=True)
-    datasets = hparams.get('datasets')
-    if datasets:
+    if datasets := hparams.get('datasets'):
         path = list(datasets.values())[0]
         if not os.path.isabs(path):
             path = os.path.join(Defaults.get_hparams_dir(args.project_dir), path)
@@ -519,12 +519,11 @@ def run(args, return_prediction=False):
     logger.info(f"Predicted shape: {pred.shape}")
     if return_prediction:
         return pred
-    else:
-        pred_period_length_sec = (model.data_per_prediction / model.input_dims) * Defaults.PERIOD_LENGTH_SEC
-        save_prediction(pred=pred,
-                        out_path=args.o,
-                        period_length_sec=pred_period_length_sec,
-                        no_argmax=args.no_argmax)
+    pred_period_length_sec = (model.data_per_prediction / model.input_dims) * Defaults.PERIOD_LENGTH_SEC
+    save_prediction(pred=pred,
+                    out_path=args.o,
+                    period_length_sec=pred_period_length_sec,
+                    no_argmax=args.no_argmax)
 
 
 def entry_func(args=None):

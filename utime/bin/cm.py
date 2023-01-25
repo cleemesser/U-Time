@@ -120,15 +120,13 @@ def glob_to_metrics_df(true_pattern: str,
     true = sorted(glob(true_pattern))
     pred = sorted(glob(pred_pattern))
     if not true:
-        raise OSError("Did not find any 'true' files matching "
-                      "pattern {}".format(true_pattern))
+        raise OSError(f"Did not find any 'true' files matching pattern {true_pattern}")
     if not pred:
-        raise OSError("Did not find any 'true' files matching "
-                      "pattern {}".format(pred_pattern))
+        raise OSError(f"Did not find any 'true' files matching pattern {pred_pattern}")
     if len(true) != len(pred):
-        raise OSError("Did not find a matching number "
-                      "of true and pred files ({} and {})"
-                      "".format(len(true), len(pred)))
+        raise OSError(
+            f"Did not find a matching number of true and pred files ({len(true)} and {len(pred)})"
+        )
     if len(true) != len(set(true)):
         raise ValueError("Two or more identical file names in the set "
                          "of 'true' files. Cannot uniquely match true/pred "
@@ -140,18 +138,21 @@ def glob_to_metrics_df(true_pattern: str,
 
     pairs = list(zip(true, pred))
     if show_pairs:
-        logger.info("PAIRS:\n{}".format(pairs))
+        logger.info(f"PAIRS:\n{pairs}")
     # Load the pairs
-    logger.info("Loading {} pairs...".format(len(pairs)))
+    logger.info(f"Loading {len(pairs)} pairs...")
     l = lambda x: [np.load(f)["arr_0"] if os.path.splitext(f)[-1] == ".npz" else np.load(f) for f in x]
     np_pairs = list(map(l, pairs))
     for i, (p1, p2) in enumerate(np_pairs):
         if len(p1) != len(p2):
-            logger.warning(f"Not equal lengths: {pairs[i]} {f'{len(p1)}/{len(p2)}'}. Trimming...")
+            logger.warning(
+                f"Not equal lengths: {pairs[i]} {len(p1)}/{len(p2)}. Trimming..."
+            )
             np_pairs[i] = trim(p1, p2)
     if wake_trim_min:
-        logger.info("OBS: Wake trimming of {} minutes (period length {} sec)"
-                    "".format(wake_trim_min, period_length_sec))
+        logger.info(
+            f"OBS: Wake trimming of {wake_trim_min} minutes (period length {period_length_sec} sec)"
+        )
         np_pairs = wake_trim(np_pairs, wake_trim_min, period_length_sec)
     mapping = Defaults.get_class_int_to_stage_string()
     true, pred = map(lambda x: x.astype(np.uint8).reshape(-1, 1), concatenate_true_pred_pairs(pairs=np_pairs))
@@ -187,11 +188,13 @@ def glob_to_metrics_df(true_pattern: str,
         cm /= cm.sum(axis=1, keepdims=True)
 
     # Pretty print
-    cm = pd.DataFrame(data=cm,
-                      index=["True {}".format(mapping[i]) for i in labels],
-                      columns=["Pred {}".format(mapping[i]) for i in labels])
-    p = "Raw" if not normalized else "Normed"
-    logger.info(f"\n\n{p} Confusion Matrix:\n" + str(cm.round(round)) + "\n")
+    cm = pd.DataFrame(
+        data=cm,
+        index=[f"True {mapping[i]}" for i in labels],
+        columns=[f"Pred {mapping[i]}" for i in labels],
+    )
+    p = "Normed" if normalized else "Raw"
+    logger.info(f"\n\n{p} Confusion Matrix:\n{str(cm.round(round))}" + "\n")
 
     # Print stage-wise metrics
     f1 = f1_scores_from_cm(cm)
@@ -204,7 +207,7 @@ def glob_to_metrics_df(true_pattern: str,
     }, index=[mapping[i] for i in labels])
     metrics = metrics.T
     metrics["mean"] = metrics.mean(axis=1)
-    logger.info(f"\n\n{p} Metrics:\n" + str(np.round(metrics.T, round)) + "\n")
+    logger.info(f"\n\n{p} Metrics:\n{str(np.round(metrics.T, round))}" + "\n")
     return metrics
 
 

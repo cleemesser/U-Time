@@ -120,10 +120,7 @@ def parse_and_add(file_, results, drop_rows, drop_cols):
                      "Rows:    {list(df.index)}\n"
                      "Columns: {list(df.columns)}")
         exit(1)
-    if len(results) == 0:
-        return df
-    o = pd.concat((df, results), axis=0, sort=True)
-    return o
+    return df if len(results) == 0 else pd.concat((df, results), axis=0, sort=True)
 
 
 def parse_results(csv_files, drop_rows, drop_cols, print_all, round_):
