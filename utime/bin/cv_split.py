@@ -48,23 +48,24 @@ def get_argparser():
                              "size is too large to store in copies. "
                              "NOTE: Only one of --copy and --file_list "
                              "flags must be set.")
-    parser.add_argument("--validation_fraction", type=float,
-                        default=_DEFAULT_VAL_FRACTION,
-                        help="Fraction of OVERALL data size used for "
-                             "validation in each split. In a 5-CV setting with"
-                             " N=100 and val_frac=0.20, each split will have "
-                             "N_train=60, N_val=20 and N_test=20 "
-                             "subjects/records (default={})".format(_DEFAULT_VAL_FRACTION))
+    parser.add_argument(
+        "--validation_fraction",
+        type=float,
+        default=_DEFAULT_VAL_FRACTION,
+        help=f"Fraction of OVERALL data size used for validation in each split. In a 5-CV setting with N=100 and val_frac=0.20, each split will have N_train=60, N_val=20 and N_test=20 subjects/records (default={_DEFAULT_VAL_FRACTION})",
+    )
     parser.add_argument("--max_validation_subjects", type=int, required=False,
                         help="(Optional) specify a maximum number of subjects"
                              " to use for validation. That is, only up to "
                              "'max_validation_subjects' number of subjects "
                              "will be used, even if 'validation_fraction' "
                              "dictates a larger number should be used.")
-    parser.add_argument("--test_fraction", type=float,
-                        default=_DEFAULT_TEST_FRACTION,
-                        help="Fraction of data size used for test if CV=1. "
-                             "(default={})".format(_DEFAULT_TEST_FRACTION))
+    parser.add_argument(
+        "--test_fraction",
+        type=float,
+        default=_DEFAULT_TEST_FRACTION,
+        help=f"Fraction of data size used for test if CV=1. (default={_DEFAULT_TEST_FRACTION})",
+    )
     parser.add_argument("--max_test_subjects", type=int, required=False,
                         help="(Optional) specify a maximum number of subjects"
                              " to use for testing. That is, only up to "
@@ -93,9 +94,9 @@ def get_argparser():
 def assert_dir_structure(data_dir, out_dir):
     """ Asserts that the data_dir exists and the out_dir does not """
     if not os.path.exists(data_dir):
-        raise OSError("Invalid data directory '%s'. Does not exist." % data_dir)
+        raise OSError(f"Invalid data directory '{data_dir}'. Does not exist.")
     if os.path.exists(out_dir):
-        raise OSError("Output directory at '%s' already exists." % out_dir)
+        raise OSError(f"Output directory at '{out_dir}' already exists.")
 
 
 def create_view_folders(out_dir, n_splits):
@@ -104,12 +105,12 @@ def create_view_folders(out_dir, n_splits):
     within a directory 'out_dir'. If n_splits == 1, only creates the out_dir.
     """
     if not os.path.exists(out_dir):
-        logger.info("Creating directory at %s" % out_dir)
+        logger.info(f"Creating directory at {out_dir}")
         os.makedirs(out_dir)
     if n_splits > 1:
         for i in range(n_splits):
             split_dir = os.path.join(out_dir, "split_%i" % i)
-            logger.info("Creating directory at %s" % split_dir)
+            logger.info(f"Creating directory at {split_dir}")
             os.mkdir(split_dir)
 
 
@@ -133,7 +134,7 @@ def add_files(file_paths, out_folder, link_func=os.symlink):
         for path in file_path:
             file_name = os.path.split(str(path))[-1]
             rel_path = os.path.relpath(path, out_folder)
-            link_func(rel_path, out_folder + "/%s" % file_name)
+            link_func(rel_path, out_folder + f"/{file_name}")
             n_records += 1
     return n_records
 
@@ -200,11 +201,9 @@ def pair_by_names(files, subject_matching_regex=None):
             f_path = os.path.split(f_path)[-1]  # Split just in case full paths
             matches = re.findall(regex, f_path)
             if len(matches) != 1:
-                raise ValueError("'subject_matching_regex' of {} matched {} "
-                                 "substrings ({}) within filename {}, "
-                                 "expected 1.".format(subject_matching_regex,
-                                                      len(matches),
-                                                      matches, f_path))
+                raise ValueError(
+                    f"'subject_matching_regex' of {subject_matching_regex} matched {len(matches)} substrings ({matches}) within filename {f_path}, expected 1."
+                )
             names.append(matches[0])
     else:
         names = [os.path.splitext(os.path.split(i)[-1])[0] for i in files]
@@ -292,11 +291,7 @@ def run_on_split(split_path, test_split, train_val_data, n_val, args):
     train_records = add_files(training, train_path, move_func)
     # Add test data
     test_records = add_files(test_split, test_path, move_func)
-    if n_val:
-        # Add validation
-        val_records = add_files(validation, val_path, move_func)
-    else:
-        val_records = 0
+    val_records = add_files(validation, val_path, move_func) if n_val else 0
     return train_records, val_records, test_records
 
 
@@ -344,8 +339,11 @@ def run(args):
     splits = np.array_split(subject_dirs, n_splits)
 
     # Prepare dataframe to store counts
-    col_names = ['split_{}'.format(i) for i in range(n_splits)] \
-        if n_splits != 1 else ['fixed_split']
+    col_names = (
+        [f'split_{i}' for i in range(n_splits)]
+        if n_splits != 1
+        else ['fixed_split']
+    )
     counts_df = pd.DataFrame(index=['train_records', 'train_subjects',
                                     'val_records', 'val_subjects',
                                     'test_records', 'test_subjects',

@@ -23,9 +23,7 @@ def gpu_string_to_list(gpu_visibility_string, as_int=False):
 
 
 def get_free_gpus(max_allowed_mem_usage=400):
-    # Check if allowed GPUs are set in CUDA_VIS_DEV.
-    allowed_gpus = _get_system_wide_set_gpus()
-    if allowed_gpus:
+    if allowed_gpus := _get_system_wide_set_gpus():
         logger.info(f"[OBS] Considering only system-wise allowed GPUs: {allowed_gpus} (set in"
                     f" CUDA_VISIBLE_DEVICES env variable).")
         return allowed_gpus
@@ -53,8 +51,7 @@ def get_free_gpus(max_allowed_mem_usage=400):
 
 
 def _get_gpu_visibility_string(free_gpus: list, num_gpus=1):
-    visibility_string = ",".join(map(str, free_gpus[:num_gpus]))
-    return visibility_string
+    return ",".join(map(str, free_gpus[:num_gpus]))
 
 
 def _get_free_gpus_visibility_string(num_gpus=1, max_allowed_mem_usage=400):

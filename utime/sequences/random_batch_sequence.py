@@ -51,16 +51,9 @@ class RandomBatchSequence(BatchSequence):
 
     def log(self):
         """ Log basic information on this object """
-        logger.info(f"\n[*] RandomBatchSequence initialized{' ({})'.format(self.identifier) if self.identifier else ''}:\n"
-                    f"    Data queue type: {type(self.dataset_queue)}\n"
-                    f"    Batch shape:     {self.batch_shape}\n"
-                    f"    N pairs:         {len(self.dataset_queue)}\n"
-                    f"    Margin:          {self.margin}\n"
-                    f"    Augmenters:      {self.augmenters}\n"
-                    f"    Aug enabled:     {self.augmentation_enabled}\n"
-                    f"    Batch scaling:   {bool(self.batch_scaler)}\n"
-                    f"    All loaded:      {self.all_loaded}\n"
-                    f"    N classes:       {self.n_classes}{' (AUTO-INFERRED)' if self._inferred else ''}")
+        logger.info(
+            f"\n[*] RandomBatchSequence initialized{f' ({self.identifier})' if self.identifier else ''}:\n    Data queue type: {type(self.dataset_queue)}\n    Batch shape:     {self.batch_shape}\n    N pairs:         {len(self.dataset_queue)}\n    Margin:          {self.margin}\n    Augmenters:      {self.augmenters}\n    Aug enabled:     {self.augmentation_enabled}\n    Batch scaling:   {bool(self.batch_scaler)}\n    All loaded:      {self.all_loaded}\n    N classes:       {self.n_classes}{' (AUTO-INFERRED)' if self._inferred else ''}"
+        )
 
     def __getitem__(self, idx):
         """

@@ -55,8 +55,11 @@ def plot_training_curves(csv_path, save_path, logy=False,
     leg = ax1.legend(loc=0)
     leg.get_frame().set_linewidth(0)
     ax1.set_xlabel("Epoch", size=16)
-    ax1.set_ylabel("Loss" if not logy else "$\log_{10}$(Loss)", size=16)
-    ax1.set_title("Training %sloss" % ("and validation " if val_loss is not None else ""), size=20)
+    ax1.set_ylabel("$\log_{10}$(Loss)" if logy else "Loss", size=16)
+    ax1.set_title(
+        f'Training {"and validation " if val_loss is not None else ""}loss',
+        size=20,
+    )
 
     # Make second plot
     ax2 = fig.add_subplot(312)
@@ -67,7 +70,7 @@ def plot_training_curves(csv_path, save_path, logy=False,
 
     plotted = 0
     for col in df.columns:
-        if any([s in col for s in exclude[1:]]) or col == "lr":
+        if any(s in col for s in exclude[1:]) or col == "lr":
             continue
         elif not re.match(include_regex, col):
             continue

@@ -27,7 +27,7 @@ def standardize_batch_shape(batch_shape):
 
 def get_best_model(model_dir):
     if len(os.listdir(model_dir)) == 0:
-        raise OSError("Model dir {} is empty.".format(model_dir))
+        raise OSError(f"Model dir {model_dir} is empty.")
     # look for models, order: val_dice, val_loss, dice, loss, model_weights
     patterns = [
         ("@epoch*val_dice*", np.argmax),
@@ -36,8 +36,7 @@ def get_best_model(model_dir):
         ("@epoch*loss*", np.argmin)
     ]
     for pattern, select_func in patterns:
-        models = glob.glob(os.path.join(model_dir, pattern))
-        if models:
+        if models := glob.glob(os.path.join(model_dir, pattern)):
             scores = []
             for m in models:
                 matches = re.findall(r"(\d+[.]\d+)", os.path.split(m)[-1])
@@ -46,30 +45,20 @@ def get_best_model(model_dir):
             return os.path.abspath(models[select_func(np.array(scores))])
     m = os.path.abspath(os.path.join(model_dir, "model_weights.h5"))
     if not os.path.exists(m):
-        raise OSError("Did not find any model files matching the patterns {} "
-                      "and did not find a model_weights.h5 file."
-                      "".format(patterns))
+        raise OSError(
+            f"Did not find any model files matching the patterns {patterns} and did not find a model_weights.h5 file."
+        )
     return m
 
 
 def get_last_model(model_dir):
     models = glob.glob(os.path.join(model_dir, "@epoch*"))
-    epochs = []
-    for m in models:
-        epochs.append(int(re.findall(r"@epoch_(\d+)_", m)[0]))
-    if epochs:
+    if epochs := [int(re.findall(r"@epoch_(\d+)_", m)[0]) for m in models]:
         last = np.argmax(epochs)
         return os.path.abspath(models[last]), int(epochs[int(last)])
     else:
         generic_path = os.path.join(model_dir, "model_weights.h5")
-        if os.path.exists(generic_path):
-            # Return epoch 0 as we dont know where else to start
-            # This may be changed elsewhere in the code based on the
-            # training data CSV file
-            return generic_path, 0
-        else:
-            # Start from scratch, or handle as see fit at call point
-            return None, None
+        return (generic_path, 0) if os.path.exists(generic_path) else (None, None)
 
 
 def save_frozen_model(keras_model, out_folder, pb_file_name):

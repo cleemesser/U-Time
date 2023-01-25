@@ -72,9 +72,9 @@ class Validation(Callback):
     def predict(self):
         # Get tensors to run and their names
         metrics = getattr(self.model, "loss_functions", self.model.losses) or self.model.loss + self.model.metrics
-        metrics = list(filter(lambda m: not type(m) is tf.keras.metrics.Mean, metrics))
         metrics_names = self.model.metrics_names
         self.model.reset_metrics()
+        metrics = list(filter(lambda m: type(m) is not tf.keras.metrics.Mean, metrics))
         assert len(metrics_names) == len(metrics)
 
         # Prepare arrays for CM summary stats
@@ -92,10 +92,7 @@ class Validation(Callback):
             # Predict and evaluate on all studies
             per_study_metrics = defaultdict(list)
             for i, sleep_study_context in enumerate(study_iterator):
-                s = "   {}Validation subject: {}/{}".format(f"[{id_}] "
-                                                            if id_ else "",
-                                                            i+1,
-                                                            n_val)
+                s = f'   {f"[{id_}] " if id_ else ""}Validation subject: {i + 1}/{n_val}'
                 print(s, end="\r", flush=True)
 
                 with sleep_study_context as ss:
@@ -103,10 +100,7 @@ class Validation(Callback):
                     pred = self.model.predict_on_batch(x)
 
                 # Compute counts
-                if hasattr(pred, "numpy"):
-                    pred_numpy = pred.numpy()
-                else:
-                    pred_numpy = pred
+                pred_numpy = pred.numpy() if hasattr(pred, "numpy") else pred
                 tps, rel, sel = self._compute_counts(pred=pred_numpy, true=y)
                 true_pos[id_] += tps
                 relevant[id_] += rel
@@ -164,10 +158,11 @@ class Validation(Callback):
         col_order = metric_keys + ["precision", "recall", "dice"]
         nan_arr = np.empty(shape=len(precisions))
         nan_arr[:] = np.nan
-        value_dict = {"precision": precisions,
-                      "recall": recalls,
-                      "dice": dices}
-        value_dict.update({key: nan_arr for key in metrics})
+        value_dict = {
+            "precision": precisions,
+            "recall": recalls,
+            "dice": dices,
+        } | {key: nan_arr for key in metrics}
         val_results = pd.DataFrame(value_dict,
                                    index=index).loc[:, col_order]  # ensure order
         # Transpose the results to have metrics in rows
@@ -214,10 +209,10 @@ class Validation(Callback):
             # Print cross-dataset mean values
             logger.info(highlighted(f"[ALL DATASETS] Means Across Classes for Epoch {epoch}"))
             fetch = ("val_dice", "val_precision", "val_recall")
-            m_fetch = tuple(["val_" + s for s in self.model.metrics_names])
+            m_fetch = tuple("val_" + s for s in self.model.metrics_names)
             to_print = {}
             for f in fetch + m_fetch:
-                scores = [logs["%s_%s" % (name, f)] for name in self.IDs]
+                scores = [logs[f"{name}_{f}"] for name in self.IDs]
                 res = np.mean(scores)
                 logs[f] = res.round(self.log_round)  # Add to log file
                 to_print[f.split("_")[-1]] = list(scores) + [res]
@@ -313,11 +308,12 @@ class CarbonUsageTracking(Callback):
         super().__init__()
         self.tracker = None
         self.add_to_logs = bool(add_to_logs)
-        self.parameters = {"epochs": epochs,
-                           "monitor_epochs": monitor_epochs,
-                           "epochs_before_pred": epochs_before_pred,
-                           "devices_by_pid": devices_by_pid}
-        self.parameters.update(additional_tracker_kwargs)
+        self.parameters = {
+            "epochs": epochs,
+            "monitor_epochs": monitor_epochs,
+            "epochs_before_pred": epochs_before_pred,
+            "devices_by_pid": devices_by_pid,
+        } | additional_tracker_kwargs
 
     def on_train_end(self, logs=None):
         """ Ensure actual consumption is reported """

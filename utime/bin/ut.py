@@ -32,13 +32,10 @@ def get_parser():
     choices = []
     file_name = os.path.split(os.path.abspath(__file__))[-1]
     for m in mods:
-        if isinstance(m, tuple):
-            name, ispkg = m[1], m[2]
-        else:
-            name, ispkg = m.name, m.ispkg
+        name, ispkg = (m[1], m[2]) if isinstance(m, tuple) else (m.name, m.ispkg)
         if name == file_name[:-3] or ispkg:
             continue
-        usage += "- " + name + "\n"
+        usage += f"- {name}" + "\n"
         choices.append(name)
 
     # Top level parser
@@ -62,7 +59,7 @@ def get_parser():
 def split_help_from_args(args):
     other_args, help_args = [], []
     for arg in args:
-        if arg == "-h" or arg == "--help":
+        if arg in ["-h", "--help"]:
             help_args.append("--help")
         else:
             other_args.append(arg)
@@ -97,7 +94,7 @@ def entry_func():
         Defaults.set_global_seed(parsed.seed)
 
     # Import the script
-    mod = importlib.import_module("utime.bin." + script)
+    mod = importlib.import_module(f"utime.bin.{script}")
 
     # Call entry function with remaining arguments
     mod.entry_func(script_args + help_agrs)

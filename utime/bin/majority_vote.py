@@ -73,9 +73,7 @@ def get_arrays(paths):
     Takes a dictionary of study-ID: numpy npy/npz file path and returns
     a dictionary of study-ID: loaded numpy arrays
     """
-    loaded = []
-    for arr_path in paths:
-        loaded.append(np.load(arr_path))
+    loaded = [np.load(arr_path) for arr_path in paths]
     return np.stack(loaded)
 
 
@@ -91,7 +89,10 @@ def run(args):
             os.mkdir(out_dir)
 
         # Get all study IDs
-        study_ids = set([os.path.split(s)[-1].split("_PRED")[0] for s in glob(dataset_dir_path + "/**/*PRED.npy")])
+        study_ids = {
+            os.path.split(s)[-1].split("_PRED")[0]
+            for s in glob(f"{dataset_dir_path}/**/*PRED.npy")
+        }
         logger.info(f"Found {len(study_ids)} paths to study IDs")
 
         for study_id in study_ids:

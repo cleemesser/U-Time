@@ -73,9 +73,10 @@ def get_train_and_val_datasets(hparams, no_val, train_on_val, dataset_ids=None):
         load = ("train_data", "val_data")
     datasets = [*get_splits_from_all_datasets(hparams, load, dataset_ids=dataset_ids)]
     if train_on_val:
-        if any([len(ds) != 2 for ds in datasets]):
-            raise ValueError("Did not find a validation set for one or more "
-                             "pairs in {}".format(datasets))
+        if any(len(ds) != 2 for ds in datasets):
+            raise ValueError(
+                f"Did not find a validation set for one or more pairs in {datasets}"
+            )
         logger.info("[OBS] Merging training and validation sets")
         datasets = [merge_train_and_val(*ds) for ds in datasets]
         no_val = True
@@ -328,10 +329,9 @@ def save_final_weights(project_dir, model, file_name):
         file_name:   (string)         Name of the saved parameter file
     """
     # Save final model weights
-    if not os.path.exists("%s/model" % project_dir):
-        os.mkdir("%s/model" % project_dir)
-    model_path = "{}/model/{}.h5".format(project_dir,
-                                         os.path.splitext(file_name)[0])
+    if not os.path.exists(f"{project_dir}/model"):
+        os.mkdir(f"{project_dir}/model")
+    model_path = f"{project_dir}/model/{os.path.splitext(file_name)[0]}.h5"
     logger.info(f"Saving current model to: {model_path}")
     if os.path.exists(model_path):
         os.remove(model_path)

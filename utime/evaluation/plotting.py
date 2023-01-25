@@ -56,10 +56,9 @@ def plot_confusion_matrix(y_true, y_pred, n_classes,
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     if normalize:
-        title = 'Normalized confusion matrix for identifier {}'.format(id_ or "???")
+        title = f'Normalized confusion matrix for identifier {id_ or "???"}'
     else:
-        title = 'Confusion matrix, without normalization for identifier {}' \
-                ''.format(id_ or "???")
+        title = f'Confusion matrix, without normalization for identifier {id_ or "???"}'
 
     # Compute confusion matrix
     classes = np.arange(n_classes)

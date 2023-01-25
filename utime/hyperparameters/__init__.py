@@ -12,10 +12,10 @@ def _handle_channel_sampling_group_renaming(hparams):
     attributes with the new common attribute 'channel_sampling_groups'.
     Required as per utime v1.0.0 due to API changes in psg_utils package.
     """
-    new_name = "channel_sampling_groups"
     for deprecated_name in ('access_time_channel_sampling_groups', 'load_time_channel_sampling_groups'):
         value = hparams.get(deprecated_name, None)
     if value is not None:
+        new_name = "channel_sampling_groups"
         logger.warning(f"Found deprecated hyperparameter value '{deprecated_name}' in hyperparameter file "
                        f"at path {hparams.yaml_path}. Renaming to '{new_name}' and saving "
                        f"hyperparameters to disk.")
@@ -74,8 +74,7 @@ def _handle_period_length_sec(hparams):
     for data_group in ("train_data", "val_data", "test_data"):
         try:
             group = hparams.get_group(data_group)
-            period_length_sec = group.get('period_length_sec')
-            if period_length_sec:
+            if period_length_sec := group.get('period_length_sec'):
                 logger.warning(f"Found deprecated 'period_length_sec' parameter in data group '{data_group}' "
                                f"in hyperparameter file at path {hparams.yaml_path}. Since utime v1.1.0 this "
                                f"parameter has been renamed to 'period_length' with units specified by the new "
@@ -121,7 +120,7 @@ class YAMLHParams(_YAMLHParams):
     Also allows to disable VC with no_version_control parameter.
     """
     def __init__(self, yaml_path, no_version_control=False):
-        vc = Defaults.PACKAGE_NAME if not no_version_control else None
+        vc = None if no_version_control else Defaults.PACKAGE_NAME
         super(YAMLHParams, self).__init__(yaml_path,
                                           version_control_package_name=vc,
                                           check_deprecated_params_func=check_deprecated_params)

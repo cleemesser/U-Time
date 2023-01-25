@@ -62,23 +62,22 @@ def assert_project_folder(project_folder, evaluation=False):
     if not os.path.exists(Defaults.get_hparams_path(project_folder)) \
             and not os.path.exists(Defaults.get_pre_processed_hparams_path(project_folder)):
         # Folder must contain a 'hparams.yaml' file in all cases.
-        raise RuntimeError("Folder {} is not a valid project folder."
-                           " Must contain a hyperparameter "
-                           "file.".format(project_folder))
+        raise RuntimeError(
+            f"Folder {project_folder} is not a valid project folder. Must contain a hyperparameter file."
+        )
     model_path = os.path.join(project_folder, "model")
     if evaluation:
         # Folder must contain a 'model' subfolder storing saved model files
         if not os.path.exists(model_path):
-            raise RuntimeError("Folder {} is not a valid project "
-                               "folder for model evaluation. Must contain a 'model' "
-                               "subfolder.".format(project_folder))
+            raise RuntimeError(
+                f"Folder {project_folder} is not a valid project folder for model evaluation. Must contain a 'model' subfolder."
+            )
         # There must be a least 1 model file (.h5) in the folder
         models = glob.glob(os.path.join(model_path, "*.h5"))
         if not models:
-            raise RuntimeError("Did not find any model parameter files in "
-                               "model subfolder {}. Model files should have"
-                               " extension '.h5' to "
-                               "be recognized.".format(project_folder))
+            raise RuntimeError(
+                f"Did not find any model parameter files in model subfolder {project_folder}. Model files should have extension '.h5' to be recognized."
+            )
     files_in_model_dir = os.path.exists(model_path) and bool(os.listdir(model_path))
     return not files_in_model_dir
 
@@ -157,8 +156,9 @@ def get_dataset_splits_from_hparams(hparams, splits_to_load, id=""):
     datasets = []
     for data_key in ensure_list_or_tuple(splits_to_load):
         if data_key not in hparams:
-            raise ValueError("Dataset with key '{}' does not exists in the "
-                             "hyperparameters file".format(data_key))
+            raise ValueError(
+                f"Dataset with key '{data_key}' does not exists in the hyperparameters file"
+            )
         new_id = f"{id}{'/' if id else ''}{hparams[data_key]['identifier']}"
         hparams[data_key]["identifier"] = new_id
 

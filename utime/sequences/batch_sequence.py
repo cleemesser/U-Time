@@ -20,9 +20,8 @@ def _infer_n_classes(n_classes, queue):
     """
     if n_classes is not None:
         return int(n_classes)
-    else:
-        with queue.get_random_study() as ss:
-            return ss.n_classes
+    with queue.get_random_study() as ss:
+        return ss.n_classes
 
 
 def _check_margin(n_periods, margin, at_idx=None):
@@ -38,24 +37,23 @@ def _check_margin(n_periods, margin, at_idx=None):
 
     """
     if not isinstance(margin, int):
-        raise ValueError(
-            "Margin must be an integer. Got '{}'".format(type(margin)))
+        raise ValueError(f"Margin must be an integer. Got '{type(margin)}'")
     if margin < 0:
-        raise ValueError(
-            "Margin must be a non-negative integer, got {}".format(margin))
+        raise ValueError(f"Margin must be a non-negative integer, got {margin}")
     # Check margin is not too large
     if margin > (n_periods-1) // 2:
         raise ValueError("Margin too large for dataset length.")
     if at_idx is not None:
         if margin > at_idx:
-            raise MarginError("Margin of {} too large at period idx {} (extends"
-                              " to negative indices)".format(margin, at_idx),
-                              shift=margin - at_idx)
+            raise MarginError(
+                f"Margin of {margin} too large at period idx {at_idx} (extends to negative indices)",
+                shift=margin - at_idx,
+            )
         if margin + at_idx >= n_periods:
-            raise MarginError("Margin of {} too large at period idx {} (extends"
-                              " to index >= to total number of periods"
-                              " ({}))".format(margin, at_idx, n_periods),
-                              shift=n_periods - (margin + at_idx + 1))
+            raise MarginError(
+                f"Margin of {margin} too large at period idx {at_idx} (extends to index >= to total number of periods ({n_periods}))",
+                shift=n_periods - (margin + at_idx + 1),
+            )
 
 
 class BatchSequence(BaseSequence):
@@ -131,16 +129,9 @@ class BatchSequence(BaseSequence):
 
     def log(self):
         """ Log basic information on this object """
-        logger.info(f"[*] BatchSequence initialized{' ({})'.format(self.identifier) if self.identifier else ''}:\n"
-                    f"    Data queue type: {type(self.dataset_queue)}\n"
-                    f"    Batch shape:     {self.batch_shape}\n"
-                    f"    N pairs:         {len(self.dataset_queue)}\n"
-                    f"    Margin:          {self.margin}\n"
-                    f"    Augmenters:      {self.augmenters}\n"
-                    f"    Aug enabled:     {self.augmentation_enabled}\n"
-                    f"    Batch scaling:   {bool(self.batch_scaler)}\n"
-                    f"    All loaded:      {self.all_loaded}\n"
-                    f"    N classes:       {self.n_classes}{' (AUTO-INFERRED)' if self._inferred else ''}")
+        logger.info(
+            f"[*] BatchSequence initialized{f' ({self.identifier})' if self.identifier else ''}:\n    Data queue type: {type(self.dataset_queue)}\n    Batch shape:     {self.batch_shape}\n    N pairs:         {len(self.dataset_queue)}\n    Margin:          {self.margin}\n    Augmenters:      {self.augmenters}\n    Aug enabled:     {self.augmentation_enabled}\n    Batch scaling:   {bool(self.batch_scaler)}\n    All loaded:      {self.all_loaded}\n    N classes:       {self.n_classes}{' (AUTO-INFERRED)' if self._inferred else ''}"
+        )
 
     @property
     @requires_all_loaded
@@ -176,7 +167,7 @@ class BatchSequence(BaseSequence):
             new_margin: (int) new margin value
         """
         if new_margin < 0:
-            raise ValueError("Margin must be >= 0, got {}".format(new_margin))
+            raise ValueError(f"Margin must be >= 0, got {new_margin}")
         self._margin = new_margin
         if self.all_loaded and self._cum_periods_per_pair_minus_margins is not None:
             # Compute cum. number of periods per pair minus newly set margin
@@ -249,8 +240,7 @@ class BatchSequence(BaseSequence):
                 # x is shape [-1, data_per_period, n_channels]
                 # reshape to [-1, seq_length, data_per_period, n_channels]
                 shape = [-1] + self.batch_shape[1:]
-                border = x.shape[0] % shape[1]
-                if border:
+                if border := x.shape[0] % shape[1]:
                     # OBS: We remove border if needed
                     x = x[:-border]
                     y = y[:-border]
@@ -365,10 +355,7 @@ class BatchSequence(BaseSequence):
                                   "'allow_shift_at_border=False'") from e
         Xs, ys = sleep_study.get_periods_by_idx(start_idx=period_idx-margin,
                                                 n_periods=margin*2+1)
-        if return_shifted_idx:
-            return Xs, ys, period_idx
-        else:
-            return Xs, ys
+        return (Xs, ys, period_idx) if return_shifted_idx else (Xs, ys)
 
     def _get_periods_in_range(self, sleep_study, start, end):
         """

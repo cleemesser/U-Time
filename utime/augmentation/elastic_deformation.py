@@ -37,14 +37,16 @@ def elastic_transform(signal, labels, alpha, sigma, bg_value=0.0):
     # Define coordinate system
     coords = (np.arange(seg_length),)
 
-    # Initialize interpolators
-    intrps = []
-    for i in range(channels):
-        intrps.append(RegularGridInterpolator(coords, signal[:, i],
-                                              method="linear",
-                                              bounds_error=False,
-                                              fill_value=bg_value))
-
+    intrps = [
+        RegularGridInterpolator(
+            coords,
+            signal[:, i],
+            method="linear",
+            bounds_error=False,
+            fill_value=bg_value,
+        )
+        for i in range(channels)
+    ]
     # Get random elastic deformations
     dx = gaussian_filter((np.random.rand(seg_length) * 2 - 1), sigma,
                          mode="constant", cval=0.) * alpha

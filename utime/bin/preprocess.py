@@ -154,7 +154,7 @@ def run(args):
                 # Create a new version of the dataset-specific hyperparameters
                 # that contain only the fields needed for pre-processed data
                 name = dataset[0].identifier.split("/")[0]
-                hparams_out_path = os.path.join(out_dir, name + ".yaml")
+                hparams_out_path = os.path.join(out_dir, f"{name}.yaml")
                 copy_dataset_hparams(dataset_hparams, hparams_out_path)
 
                 # Update paths to dataset hparams in main hparams file
@@ -175,9 +175,9 @@ def run(args):
                                       split.identifier.split("/")[-1].lower(),
                                       split.pairs[0].get_period_length_in(TimeUnit.SECOND))
 
-                    # Overwrite potential load time channel sampler to None
-                    channel_sampling_groups = dataset_hparams.get('channel_sampling_groups')
-                    if channel_sampling_groups:
+                    if channel_sampling_groups := dataset_hparams.get(
+                        'channel_sampling_groups'
+                    ):
                         unique_channels = list(set(flatten_lists_recursively(
                             channel_sampling_groups
                         )))
@@ -196,8 +196,7 @@ def run(args):
                     n_pairs = len(split.pairs)
                     for i, _ in enumerate(pool.map(process_func,
                                                    split.pairs)):
-                        print("  {}/{}".format(i+1, n_pairs),
-                              end='\r', flush=True)
+                        print(f"  {i + 1}/{n_pairs}", end='\r', flush=True)
                     print("")
 
 

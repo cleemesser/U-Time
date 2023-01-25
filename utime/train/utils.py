@@ -20,7 +20,7 @@ def ensure_sparse(loss_and_metric_names: list):
     metric names. Raises NotSparseError if one or more does not contain the
     substring.
     """
-    for i, m in enumerate(loss_and_metric_names):
+    for m in loss_and_metric_names:
         if "sparse" not in m.lower():
             # Default error message to raise with non-sparse losses or metrics passed
             raise NotSparseError("This implementation now requires integer targets "

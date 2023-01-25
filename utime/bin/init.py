@@ -19,7 +19,7 @@ def get_parser():
     parser = ArgumentParser(description='Create a new project folder')
 
     # Define groups
-    defaults = os.path.split(__file__)[0] + "/defaults"
+    defaults = f"{os.path.split(__file__)[0]}/defaults"
 
     parser.add_argument('--name', type=str, required=True,
                         help='the name of the project folder')
@@ -65,7 +65,7 @@ def copy_yaml_and_set_data_dirs(in_path, out_path, data_dir=None):
     data_ids = ("train", "val", "test")
     for dataset in data_ids:
         path = os.path.join(data_dir, dataset) if data_dir else "Null"
-        dataset = dataset + "_data"
+        dataset = f"{dataset}_data"
         if hparams.get(dataset) and not hparams[dataset].get("data_dir"):
             hparams.set_group(f"/{dataset}/data_dir", path, missing_parents_ok=True, overwrite=True)
     hparams.save_current(out_path)
@@ -107,7 +107,7 @@ def run(args):
     Run this script with the specified args. See argparser for details.
     """
     add_logging_file_handler(args.log_file, args.overwrite, mode="w")
-    default_folder = os.path.split(os.path.abspath(__file__))[0] + "/defaults"
+    default_folder = f"{os.path.split(os.path.abspath(__file__))[0]}/defaults"
     if not os.path.exists(default_folder):
         raise OSError(f"Default path not found at {default_folder}")
     root_path = os.path.abspath(args.root)
@@ -115,16 +115,14 @@ def run(args):
     if data_dir:
         data_dir = os.path.abspath(data_dir)
 
-    # Validate project path and create folder
     if not os.path.exists(root_path):
         raise OSError(f"root path '{args.root}' does not exist.")
-    else:
-        out_folder = os.path.join(root_path, args.name)
-        if os.path.exists(out_folder) and not args.overwrite:
-            raise OSError(f"Folder at '{out_folder}' already exists and --overwrite flag was not set. "
-                          f"Note that running this script with --overwrite will only replace "
-                          f"hyperparameter file data.")
-        init_project_folder(default_folder, args.model, out_folder, data_dir)
+    out_folder = os.path.join(root_path, args.name)
+    if os.path.exists(out_folder) and not args.overwrite:
+        raise OSError(f"Folder at '{out_folder}' already exists and --overwrite flag was not set. "
+                      f"Note that running this script with --overwrite will only replace "
+                      f"hyperparameter file data.")
+    init_project_folder(default_folder, args.model, out_folder, data_dir)
 
 
 def entry_func(args=None):

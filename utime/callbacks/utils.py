@@ -37,7 +37,7 @@ def init_callback_objects(callbacks):
             try:
                 cb = getattr(tfcb, cls_name, None) or getattr(tcb, cls_name)
             except AttributeError as e:
-                raise ValueError("No callback named %s" % cls_name) from e
+                raise ValueError(f"No callback named {cls_name}") from e
             cb = cb(**kwargs)
         if start_from:
             logger.info(f"OBS: '{cls_name}' activates at epoch {start_from}")
@@ -63,9 +63,10 @@ def remove_validation_callbacks(callbacks):
         None, operates in-place
     """
     for i, callback in enumerate(callbacks):
-        val_dependent_params = []
-        for param in callback["kwargs"].values():
-            val_dependent_params.append("val" in str(param).lower())
+        val_dependent_params = [
+            "val" in str(param).lower()
+            for param in callback["kwargs"].values()
+        ]
         if any(val_dependent_params):
             logger.info(f"Removing callback with parameters: {callback} (needs validation data)")
             callbacks.pop(i)

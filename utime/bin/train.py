@@ -192,7 +192,11 @@ def run(args):
         raise OSError("There seems to be files in the 'model' folder of this project directory, "
                       "but neither --overwrite nor --continue_training flags were set.")
 
-    add_logging_file_handler(args.log_file, args.overwrite, mode="w" if not args.continue_training else "a")
+    add_logging_file_handler(
+        args.log_file,
+        args.overwrite,
+        mode="a" if args.continue_training else "w",
+    )
     logger.info(f"Args dump: {vars(args)}")
 
     # Settings depending on --preprocessed flag.

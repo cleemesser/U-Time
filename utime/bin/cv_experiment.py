@@ -90,14 +90,13 @@ def get_free_gpu_sets(num_gpus, ignore_gpus=None):
     free_gpus = sorted(get_free_gpus())
     free_gpus = list(filter(lambda gpu: gpu not in ignore_gpus, free_gpus))
     total_gpus = len(free_gpus)
-    if total_gpus % num_gpus or not free_gpus:
-        if total_gpus < num_gpus:
-            raise ValueError(f"Invalid number of GPUs per process '{num_gpus}' for total "
-                             f"GPU count of '{total_gpus}' - must be evenly divisible.")
-        else:
-            raise NotImplementedError
-    else:
+    if not total_gpus % num_gpus and free_gpus:
         return _get_gpu_sets(free_gpus, num_gpus)
+    if total_gpus < num_gpus:
+        raise ValueError(f"Invalid number of GPUs per process '{num_gpus}' for total "
+                         f"GPU count of '{total_gpus}' - must be evenly divisible.")
+    else:
+        raise NotImplementedError
 
 
 def monitor_gpus(every, gpu_queue, num_gpus, ignore_gpus, current_pool, stop_event):
@@ -109,12 +108,7 @@ def monitor_gpus(every, gpu_queue, num_gpus, ignore_gpus, current_pool, stop_eve
         try:
             gpu_sets = get_free_gpu_sets(num_gpus, ignore_gpus)
             for gpu_set in gpu_sets:
-                if any([g in current_pool for g in gpu_set.split(",")]):
-                    # If one or more GPUs are already in use - this may happen
-                    # initially as preprocessing occurs in a process before GPU
-                    # memory has been allocated - ignore the set
-                    continue
-                else:
+                if all(g not in current_pool for g in gpu_set.split(",")):
                     gpu_queue.put(gpu_set)
                     current_pool += gpu_set.split(",")
         except ValueError:
@@ -230,28 +224,25 @@ def _assert_run_split(monitor_gpus_every, num_jobs):
 def _assert_force_and_ignore_gpus(force_gpus, ignore_gpu):
     force_gpus = gpu_string_to_list(force_gpus)
     ignore_gpu = gpu_string_to_list(ignore_gpu)
-    overlap = set(force_gpus) & set(ignore_gpu)
-    if overlap:
-        raise RuntimeError("Cannot both force and ignore GPU(s) {}. "
-                           "Got forced GPUs {} and ignored GPUs {}".format(
-            overlap, force_gpus, ignore_gpu
-        ))
+    if overlap := set(force_gpus) & set(ignore_gpu):
+        raise RuntimeError(
+            f"Cannot both force and ignore GPU(s) {overlap}. Got forced GPUs {force_gpus} and ignored GPUs {ignore_gpu}"
+        )
 
 
 def prepare_hparams_dir(hparams_dir):
-    if not os.path.exists(hparams_dir):
-        # Check local hparams.yaml file, move into hparams_dir
-        if os.path.exists("hparams.yaml"):
-            os.mkdir(hparams_dir)
-            hparams = YAMLHParams("hparams.yaml", no_version_control=True)
-            for dataset, path in hparams['datasets'].items():
-                destination = os.path.join(hparams_dir, path)
-                os.makedirs(os.path.dirname(destination), exist_ok=True)
-                shutil.move(path, destination)
-            shutil.move("hparams.yaml", hparams_dir)
-        else:
-            raise RuntimeError("Must specifiy hyperparameters in a folder at path --hparams_prototype_dir <path> OR " + \
-                               "have a hparams.yaml file at the current working directory (i.e. project folder)")
+    if os.path.exists(hparams_dir):
+        return
+    if not os.path.exists("hparams.yaml"):
+        raise RuntimeError("Must specifiy hyperparameters in a folder at path --hparams_prototype_dir <path> OR " + \
+                           "have a hparams.yaml file at the current working directory (i.e. project folder)")
+    os.mkdir(hparams_dir)
+    hparams = YAMLHParams("hparams.yaml", no_version_control=True)
+    for dataset, path in hparams['datasets'].items():
+        destination = os.path.join(hparams_dir, path)
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        shutil.move(path, destination)
+    shutil.move("hparams.yaml", hparams_dir)
 
 
 def assert_args(args, n_splits):
@@ -265,9 +256,9 @@ def assert_args(args, n_splits):
                                "--start_from arguments.")
     first_split = args.run_on_split or args.start_from
     if first_split < 0 or first_split > (n_splits-1):
-        raise RuntimeError("--run_on_split or --start_from is out of range"
-                           " [0-{}] with value {}".format(n_splits-1,
-                                                          first_split))
+        raise RuntimeError(
+            f"--run_on_split or --start_from is out of range [0-{n_splits - 1}] with value {first_split}"
+        )
 
 
 def run(args):

@@ -100,11 +100,10 @@ def prepare_output_dir(out_dir, overwrite):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     elif not overwrite:
-        files = os.listdir(out_dir)
-        if files:
-            raise OSError("out_dir {} is not empty and --overwrite=False. Folder"
-                          " contains the following files: {}".format(out_dir,
-                                                                     files))
+        if files := os.listdir(out_dir):
+            raise OSError(
+                f"out_dir {out_dir} is not empty and --overwrite=False. Folder contains the following files: {files}"
+            )
 
 
 def get_and_load_model(project_dir, hparams, weights_file_name=None, clear_previous=True):
@@ -175,10 +174,12 @@ def plot_hypnogram(out_dir, pred, id_, true=None):
     """
     from utime.evaluation.plotting import plot_and_save_hypnogram
     hyp_plot_dir = os.path.join(out_dir, "plots", "hypnograms")
-    plot_and_save_hypnogram(out_path=os.path.join(hyp_plot_dir, id_ + ".png"),
-                            y_pred=pred,
-                            y_true=true,
-                            id_=id_)
+    plot_and_save_hypnogram(
+        out_path=os.path.join(hyp_plot_dir, f"{id_}.png"),
+        y_pred=pred,
+        y_true=true,
+        id_=id_,
+    )
 
 
 def plot_cm(out_dir, pred, true, n_classes, id_):
@@ -189,12 +190,14 @@ def plot_cm(out_dir, pred, true, n_classes, id_):
     cm_plot_dir = os.path.join(out_dir, "plots", "CMs")
 
     # Compute and plot CM
-    plot_and_save_cm(out_path=os.path.join(cm_plot_dir, id_ + ".png"),
-                     pred=pred,
-                     true=true,
-                     n_classes=n_classes,
-                     id_=id_,
-                     normalized=True)
+    plot_and_save_cm(
+        out_path=os.path.join(cm_plot_dir, f"{id_}.png"),
+        pred=pred,
+        true=true,
+        n_classes=n_classes,
+        id_=id_,
+        normalized=True,
+    )
 
 
 def save(arr, fname):
@@ -226,13 +229,14 @@ def _predict_sequence(study_pair, seq, model, verbose=True):
     from utime.utils.scriptutils.predict import sequence_predict_generator
     gen = seq.single_study_seq_generator(study_id=study_pair.identifier,
                                          overlapping=True)
-    pred = sequence_predict_generator(model=model,
-                                      total_seq_length=study_pair.n_periods,
-                                      generator=gen,
-                                      argmax=False,
-                                      overlapping=True,
-                                      verbose=verbose)
-    return pred
+    return sequence_predict_generator(
+        model=model,
+        total_seq_length=study_pair.n_periods,
+        generator=gen,
+        argmax=False,
+        overlapping=True,
+        verbose=verbose,
+    )
 
 
 def _predict_sequence_one_shot(study_pair, seq, model):
@@ -314,7 +318,7 @@ def predict_on(study_pair, seq, model=None, model_func=None, n_aug=None,
             # Predict additional times with augmentation enabled
             seq.augmentation_enabled = True
             for i in range(n_aug):
-                print("-- With aug: {}/{}".format(i+1, n_aug), end="\r", flush=True)
+                print(f"-- With aug: {i + 1}/{n_aug}", end="\r", flush=True)
                 pred += pred_func(study_pair, seq, model) / n_aug
             seq.augmentation_enabled = False
             print()
@@ -406,7 +410,7 @@ def run_pred_and_eval(dataset,
                                 period_length_sec=dataset.period_length_sec)[0]
         if not args.no_save:
             # Save the output
-            save_dir = os.path.join(out_dir, "files/{}".format(id_))
+            save_dir = os.path.join(out_dir, f"files/{id_}")
             save(pred, fname=os.path.join(save_dir, "pred.npz"))
             if not args.no_save_true:
                 save(y, fname=os.path.join(save_dir, "true.npz"))
